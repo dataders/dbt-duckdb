@@ -1,0 +1,25 @@
+[project]
+name = "dbt-duckdb"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Anders Swanson", email = "anders.swanson@dbtlabs.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "dbt-adapters>=1.17.1",
+    "dbt-core>=1.10.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "dbt-duckdb",
+]
+
+[tool.uv.sources]
+dbt-duckdb = { workspace = true }
