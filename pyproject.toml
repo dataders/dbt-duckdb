@@ -50,3 +50,11 @@ include = ["dbt", "dbt.*"]
 
 [tool.setuptools.package-data]
 "*" = ["*"]
+
+[tool.uv.sources]
+dbt-duckdb = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "dbt-duckdb",
+]
