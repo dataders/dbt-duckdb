@@ -68,19 +68,44 @@
 
     {{ sql_header if sql_header is not none }}
 
-    create {% if temporary: -%}temporary{%- endif %} table
-      {{ relation.include(database=(not temporary), schema=(not temporary)) }}
-  {% if contract_config.enforced and not temporary %}
-    {#-- DuckDB doesnt support constraints on temp tables --#}
-    {{ get_table_columns_and_constraints() }} ;
-    insert into {{ relation }} {{ get_column_names() }} (
-      {{ get_select_subquery(compiled_code) }}
-    );
-  {% else %}
-    as (
-      {{ compiled_code }}
-    );
-  {% endif %}
+    {#-- Handle catalog integration configurations --#}
+    {% if config.get('catalog_name') and not temporary %}
+      {% set catalog_relation = adapter.build_catalog_relation(config.model) %}
+      {% set ddl_properties = catalog_relation.ddl_properties %}
+      
+      create table {{ relation.include(database=(not temporary), schema=(not temporary)) }}
+      {% if ddl_properties %}
+        {% for key, value in ddl_properties.items() %}
+          {{ key }} = '{{ value }}'
+        {% endfor %}
+      {% endif %}
+      {% if contract_config.enforced %}
+        {#-- DuckDB doesnt support constraints on temp tables --#}
+        {{ get_table_columns_and_constraints() }} ;
+        insert into {{ relation }} {{ get_column_names() }} (
+          {{ get_select_subquery(compiled_code) }}
+        );
+      {% else %}
+        as (
+          {{ compiled_code }}
+        );
+      {% endif %}
+    {% else %}
+      {#-- Standard table creation without catalog integration --#}
+      create {% if temporary: -%}temporary{%- endif %} table
+        {{ relation.include(database=(not temporary), schema=(not temporary)) }}
+      {% if contract_config.enforced and not temporary %}
+        {#-- DuckDB doesnt support constraints on temp tables --#}
+        {{ get_table_columns_and_constraints() }} ;
+        insert into {{ relation }} {{ get_column_names() }} (
+          {{ get_select_subquery(compiled_code) }}
+        );
+      {% else %}
+        as (
+          {{ compiled_code }}
+        );
+      {% endif %}
+    {% endif %}
   {%- elif language == 'python' -%}
     {{ py_write_table(temporary=temporary, relation=relation, compiled_code=compiled_code) }}
   {%- else -%}

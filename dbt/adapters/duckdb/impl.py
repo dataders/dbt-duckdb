@@ -20,6 +20,7 @@ from dbt_common.utils import encoding as dbt_encoding
 
 from .constants import DEFAULT_TEMP_SCHEMA_NAME
 from .constants import TEMP_SCHEMA_NAME
+from .constants import DEFAULT_DUCKDB_CATALOG
 from dbt.adapters.base import AdapterConfig
 from dbt.adapters.base import BaseRelation
 from dbt.adapters.base.column import Column as BaseColumn
@@ -37,6 +38,11 @@ from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.exceptions import IndexConfigError
 from dbt.adapters.exceptions import IndexConfigNotDictError
 from dbt.adapters.sql import SQLAdapter
+from dbt.adapters.duckdb.catalogs import (
+    DuckDBDefaultCatalogIntegration,
+    DuckDBIcebergCatalogIntegration,
+    DuckDBDeltaCatalogIntegration,
+)
 
 
 if TYPE_CHECKING:
@@ -88,6 +94,18 @@ class DuckDBAdapter(SQLAdapter):
     Relation = DuckDBRelation
 
     AdapterSpecificConfigs = DuckDBConfig
+    
+    # Register catalog integrations
+    CATALOG_INTEGRATIONS = [
+        DuckDBDefaultCatalogIntegration,
+        DuckDBIcebergCatalogIntegration,
+        DuckDBDeltaCatalogIntegration,
+    ]
+
+    def __init__(self, config, mp_context) -> None:
+        super().__init__(config, mp_context)
+        # Add default catalog integration
+        self.add_catalog_integration(DEFAULT_DUCKDB_CATALOG)
 
     CONSTRAINT_SUPPORT = {
         ConstraintType.check: ConstraintSupport.ENFORCED,
